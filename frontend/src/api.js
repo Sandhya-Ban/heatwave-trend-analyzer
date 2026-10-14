@@ -51,6 +51,37 @@ export function buildQuery(region, period, definition, hazard = "heatwave") {
   return { query: q };
 }
 
+/**
+ * Resolves a full API URL given a path and optional query string.
+ * Uses VITE_API_URL from environment variables if defined.
+ * Safely strips trailing slashes and handles any leading "/api" so URLs are never malformed or duplicated.
+ *
+ * Example:
+ *   If VITE_API_URL = "https://heatwave-trend-analyzer.onrender.com"
+ *   buildApiUrl("/api/analysis?lat=28.61...")
+ *   -> "https://heatwave-trend-analyzer.onrender.com/api/analysis?lat=28.61..."
+ */
+export function buildApiUrl(path = "", customBase = undefined) {
+  let cleanPath = (path || "").trim();
+  if (cleanPath.startsWith("http://") || cleanPath.startsWith("https://")) {
+    return cleanPath;
+  }
+  const envUrl = customBase !== undefined ? customBase : ((typeof import.meta !== "undefined" && import.meta?.env?.VITE_API_URL) || "");
+  const trimmedBase = (envUrl || "").trim().replace(/\/+$/, "");
+  const baseWithoutApi = trimmedBase.replace(/\/api$/, "");
+
+  if (!cleanPath.startsWith("/")) {
+    cleanPath = `/${cleanPath}`;
+  }
+  if (!cleanPath.startsWith("/api/") && cleanPath !== "/api") {
+    cleanPath = `/api${cleanPath}`;
+  }
+
+  return baseWithoutApi ? `${baseWithoutApi}${cleanPath}` : cleanPath;
+}
+
+export const apiUrl = buildApiUrl;
+
 async function getJson(url, signal) {
   let res;
   try { res = await fetch(url, { signal }); }
@@ -66,6 +97,12 @@ async function getJson(url, signal) {
   return body;
 }
 
-export const fetchAnalysis = (query, signal) => getJson(`/api/analysis?${query}`, signal);
-export const searchPlaces = (q, signal) => getJson(`/api/geocode?q=${encodeURIComponent(q)}`, signal);
-export const exportUrl = (kind, query) => (kind === "pdf" ? `/api/export/pdf?${query}` : `/api/export/csv?kind=${kind}&${query}`);
+export const fetchAnalysis = (query, signal) => getJson(buildApiUrl(`/api/analysis?${query}`), signal);
+export const searchPlaces = (q, signal) => getJson(buildApiUrl(`/api/geocode?q=${encodeURIComponent(q)}`), signal);
+export const exportUrl = (kind, query) => {
+  const qs = query ? `?${query}` : "";
+  const path = kind === "pdf" ? `/api/export/pdf${qs}` : `/api/export/csv?kind=${kind}${query ? `&${query}` : ""}`;
+  return buildApiUrl(path);
+};
+export const fetchHealth = (signal) => getJson(buildApiUrl("/api/health"), signal);
+export const fetchHazards = (signal) => getJson(buildApiUrl("/api/hazards"), signal);

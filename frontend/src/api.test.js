@@ -1,5 +1,5 @@
-import { describe, expect, it } from "vitest";
-import { buildQuery } from "./api.js";
+import { describe, expect, it, vi, afterEach } from "vitest";
+import { buildQuery, buildApiUrl, apiUrl, exportUrl, fetchAnalysis, searchPlaces, fetchHealth, fetchHazards } from "./api.js";
 
 const def = { percentile: 95, minDays: 3 };
 const pt = { mode: "point", lat: "28.6", lon: "77.2" };
@@ -44,5 +44,105 @@ describe("buildQuery", () => {
     expect(buildQuery(pt, { start: 1991, end: 2020 }, { percentile: 95, minDays: 1 }).error).toMatch(/Minimum days/);
     expect(buildQuery(pt, { start: 1991, end: 2020 }, { percentile: "", minDays: 3 }, "heavy_rainfall").error).toBeTruthy();
     expect(buildQuery(pt, { start: 1991, end: 2020 }, { percentile: "", minDays: "" }, "drought").error).toBeUndefined();
+  });
+});
+
+describe("buildApiUrl & centralized API client", () => {
+  const RENDER_URL = "https://heatwave-trend-analyzer.onrender.com";
+
+  afterEach(() => {
+    vi.restoreAllMocks();
+  });
+
+  it("resolves relative path when VITE_API_URL is unset", () => {
+    expect(buildApiUrl("/api/analysis?lat=28.61", "")).toBe("/api/analysis?lat=28.61");
+  });
+
+  it("resolves full Render URL correctly", () => {
+    expect(buildApiUrl("/api/analysis?lat=28.61", RENDER_URL))
+      .toBe("https://heatwave-trend-analyzer.onrender.com/api/analysis?lat=28.61");
+  });
+
+  it("handles base URL with trailing slash without duplication", () => {
+    expect(buildApiUrl("/api/analysis?lat=28.61", `${RENDER_URL}/`))
+      .toBe("https://heatwave-trend-analyzer.onrender.com/api/analysis?lat=28.61");
+  });
+
+  it("handles base URL with trailing /api or /api/ without duplicating /api", () => {
+    expect(buildApiUrl("/api/analysis?lat=28.61", `${RENDER_URL}/api`))
+      .toBe("https://heatwave-trend-analyzer.onrender.com/api/analysis?lat=28.61");
+    expect(buildApiUrl("/api/analysis?lat=28.61", `${RENDER_URL}/api/`))
+      .toBe("https://heatwave-trend-analyzer.onrender.com/api/analysis?lat=28.61");
+  });
+
+  it("normalizes paths missing leading slash or missing /api prefix", () => {
+    expect(buildApiUrl("api/analysis?lat=28.61", RENDER_URL))
+      .toBe("https://heatwave-trend-analyzer.onrender.com/api/analysis?lat=28.61");
+    expect(buildApiUrl("analysis?lat=28.61", RENDER_URL))
+      .toBe("https://heatwave-trend-analyzer.onrender.com/api/analysis?lat=28.61");
+  });
+
+  it("preserves external full URLs", () => {
+    expect(buildApiUrl("https://example.com/api/test", RENDER_URL)).toBe("https://example.com/api/test");
+  });
+
+  it("apiUrl is an alias to buildApiUrl", () => {
+    expect(apiUrl).toBe(buildApiUrl);
+  });
+
+  it("generates correct export URLs for yearly CSV, events CSV, and PDF report", () => {
+    const q = "lat=28.61&lon=77.21&hazard=heatwave";
+    // Using import.meta.env default
+    const yearly = exportUrl("yearly", q);
+    const events = exportUrl("events", q);
+    const pdf = exportUrl("pdf", q);
+
+    expect(yearly).toContain("/api/export/csv?kind=yearly&lat=28.61&lon=77.21&hazard=heatwave");
+    expect(events).toContain("/api/export/csv?kind=events&lat=28.61&lon=77.21&hazard=heatwave");
+    expect(pdf).toContain("/api/export/pdf?lat=28.61&lon=77.21&hazard=heatwave");
+  });
+
+  it("fetchAnalysis sends request to the resolved API URL", async () => {
+    const mockJson = { ok: true, yearly: [] };
+    const fetchSpy = vi.spyOn(globalThis, "fetch").mockResolvedValue({
+      ok: true,
+      status: 200,
+      json: async () => mockJson,
+    });
+
+    const res = await fetchAnalysis("lat=28.61&lon=77.21");
+    expect(fetchSpy).toHaveBeenCalled();
+    const calledUrl = fetchSpy.mock.calls[0][0];
+    expect(calledUrl).toMatch(/\/api\/analysis\?lat=28\.61&lon=77\.21$/);
+    expect(res).toEqual(mockJson);
+  });
+
+  it("searchPlaces sends request to geocode endpoint", async () => {
+    const mockJson = { results: [{ name: "Delhi", lat: 28.61, lon: 77.21 }] };
+    const fetchSpy = vi.spyOn(globalThis, "fetch").mockResolvedValue({
+      ok: true,
+      status: 200,
+      json: async () => mockJson,
+    });
+
+    const res = await searchPlaces("Delhi");
+    expect(fetchSpy).toHaveBeenCalled();
+    const calledUrl = fetchSpy.mock.calls[0][0];
+    expect(calledUrl).toMatch(/\/api\/geocode\?q=Delhi$/);
+    expect(res).toEqual(mockJson);
+  });
+
+  it("fetchHealth and fetchHazards call their respective endpoints", async () => {
+    const fetchSpy = vi.spyOn(globalThis, "fetch").mockResolvedValue({
+      ok: true,
+      status: 200,
+      json: async () => ({ status: "ok" }),
+    });
+
+    await fetchHealth();
+    expect(fetchSpy.mock.calls[0][0]).toMatch(/\/api\/health$/);
+
+    await fetchHazards();
+    expect(fetchSpy.mock.calls[1][0]).toMatch(/\/api\/hazards$/);
   });
 });
