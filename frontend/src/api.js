@@ -66,7 +66,9 @@ export function buildApiUrl(path = "", customBase = undefined) {
   if (cleanPath.startsWith("http://") || cleanPath.startsWith("https://")) {
     return cleanPath;
   }
-  const envUrl = customBase !== undefined ? customBase : ((typeof import.meta !== "undefined" && import.meta?.env?.VITE_API_URL) || "");
+  const envUrl = customBase !== undefined
+    ? customBase
+    : (import.meta.env.VITE_API_URL || (import.meta.env.PROD ? "https://heatwave-trend-analyzer.onrender.com" : ""));
   const trimmedBase = (envUrl || "").trim().replace(/\/+$/, "");
   const baseWithoutApi = trimmedBase.replace(/\/api$/, "");
 
