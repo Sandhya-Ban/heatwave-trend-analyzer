@@ -1,0 +1,11 @@
+services:
+  - type: web
+    name: heatwave-trend-analyzer
+    runtime: docker
+    plan: free
+    healthCheckPath: /api/health
+    envVars:
+      - key: MONGODB_URI        # MongoDB Atlas free (M0) connection string
+        sync: false
+      - key: TRUST_PROXY
+        value: "true"

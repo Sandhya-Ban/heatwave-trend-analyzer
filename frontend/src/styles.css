@@ -1,0 +1,135 @@
+:root {
+  --ink: #16222E; --ink-2: #4A5A68; --paper: #F2F4F5; --card: #FFFFFF; --rule: #D5DBDF;
+  --cool: #2C6E8F; --warn-bg: #FFF3D6; --err-bg: #FCE4E0;
+  /* Hazard accent. Overridden per theme below; these are the heatwave defaults so
+     anything rendered outside .app still gets a sensible colour. */
+  --accent: #CE440E; --accent-dark: #8E2A07; --accent-tint: #FBE9D8;
+  /* Cards are separated by shadow instead of a 1px outline. Two layers: a tight
+     contact shadow for the edge, a softer one for lift. */
+  --shadow-sm: 0 1px 2px rgba(22, 34, 46, .06), 0 2px 6px rgba(22, 34, 46, .05);
+  --shadow-md: 0 2px 4px rgba(22, 34, 46, .07), 0 8px 20px rgba(22, 34, 46, .09);
+  /* Hover/raised state for cards that respond to the pointer. */
+  --shadow-lg: 0 4px 8px rgba(22, 34, 46, .08), 0 16px 34px rgba(22, 34, 46, .13);
+  font-family: "Inter", system-ui, -apple-system, "Segoe UI", sans-serif;
+  color: var(--ink); background: var(--paper); line-height: 1.5;
+}
+* { box-sizing: border-box; }
+body { margin: 0; }
+
+/* Hazard themes. The selected hazard sets the whole page accent: headings, the analyse
+   button, focus rings, table headers, KPI figures and the stripe ramp all follow it.
+   Values are duplicated from src/theme.js because Chart.js needs literal colours;
+   keep the two in sync. Contrast targets are documented in src/theme.js. */
+.app[data-theme="heatwave"]       { --accent: #CE440E; --accent-dark: #8E2A07; --accent-tint: #FBE9D8; }
+.app[data-theme="heavy_rainfall"] { --accent: #1C6EA4; --accent-dark: #0D4A70; --accent-tint: #DEEAF4; }
+.app[data-theme="drought"]        { --accent: #8A5A2B; --accent-dark: #5A3817; --accent-tint: #F1E7D9; }
+h1, h2, h3, p { margin: 0; }
+.sr { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+:focus-visible { outline: 3px solid var(--accent); outline-offset: 2px; }
+
+.app { max-width: 1320px; margin: 0 auto; padding: 24px 20px 56px; }
+.top { padding: 4px 0 20px; }
+/* Page title and hero headline carry the hazard accent, tying them to the charts.
+   h1 uses --accent (large text, >= 3:1 on --paper); h2 uses --accent-dark because at
+   1.5rem it is normal-size text and needs the 4.5:1 threshold (>= 8:1 on white). */
+.top h1 { font-size: 2.05rem; font-weight: 700; letter-spacing: -0.025em; line-height: 1.15; color: var(--accent); }
+.top p { color: var(--ink-2); max-width: 62ch; margin-top: 4px; }
+
+.layout { display: grid; grid-template-columns: 360px minmax(0, 1fr); gap: 28px; align-items: start; }
+.panel { background: var(--card); border-radius: 6px; padding: 18px; display: grid; gap: 16px; position: sticky; top: 12px; box-shadow: var(--shadow-md); }
+fieldset { border: 0; padding: 0; margin: 0; display: grid; gap: 8px; min-width: 0; }
+legend { font-weight: 600; padding: 0; margin-bottom: 6px; }
+label { display: grid; gap: 3px; font-size: .85rem; color: var(--ink-2); }
+input, select { font: inherit; color: var(--ink); padding: 7px 9px; border: 1px solid #aeb8bf; border-radius: 4px; background: #fff; width: 100%; }
+button { font: inherit; cursor: pointer; }
+.grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.hint { font-size: .8rem; color: var(--ink-2); }
+.muted { color: var(--ink-2); padding: 24px 0; }
+.seg { display: grid; grid-template-columns: 1fr 1fr; border: 1px solid #aeb8bf; border-radius: 4px; overflow: hidden; }
+.seg button { border: 0; background: #fff; padding: 7px; color: var(--ink); }
+.seg button[aria-pressed="true"] { background: var(--ink); color: #fff; }
+.search { display: grid; grid-template-columns: 1fr auto; gap: 6px; }
+.search button, .link { border: 1px solid #aeb8bf; background: #fff; border-radius: 4px; padding: 6px 12px; }
+.link { margin-top: 10px; }
+.results { list-style: none; margin: 0; padding: 0; border-radius: 4px; max-height: 190px; overflow: auto; box-shadow: var(--shadow-md); }
+.results button { width: 100%; text-align: left; border: 0; background: #fff; padding: 8px 10px; border-bottom: 1px solid var(--rule); }
+.results button:hover { background: var(--paper); }
+.map { height: 230px; border: 1px solid var(--rule); border-radius: 4px; z-index: 0; }
+details summary { cursor: pointer; font-weight: 600; margin-bottom: 8px; }
+.primary { background: var(--accent); color: #fff; border: 0; border-radius: 4px; padding: 11px; font-weight: 600; }
+.primary:hover:not(:disabled) { background: var(--accent-dark); }
+.primary:disabled { opacity: .6; cursor: progress; }
+.field-error { color: #A12A12; font-size: .85rem; }
+.banner { padding: 10px 12px; border-radius: 4px; font-size: .9rem; }
+.banner.error { background: var(--err-bg); color: #7A1D0C; }
+.banner.warn { background: var(--warn-bg); margin-bottom: 14px; }
+
+.results-area { transition: opacity .15s; }
+.results-area.stale { opacity: .5; }
+.hero { background: var(--card); border-radius: 6px; padding: 22px 24px 18px; box-shadow: var(--shadow-md); }
+.place { color: var(--ink-2); font-size: .9rem; }
+.hero h2 { font-size: 1.5rem; font-weight: 600; letter-spacing: -0.01em; line-height: 1.35; margin: 6px 0 18px; max-width: 70ch; color: var(--accent-dark); }
+.stripes-wrap { margin: 0; }
+.stripes { display: flex; height: 120px; border-radius: 3px; overflow: hidden; }
+.stripe { flex: 1; min-width: 2px; }
+.stripe-excluded { background: repeating-linear-gradient(45deg, #E3E7EA 0 4px, #F6F7F8 4px 8px); }
+.stripes-wrap figcaption { display: flex; justify-content: space-between; align-items: center; font-size: .8rem; color: var(--ink-2); margin-top: 6px; gap: 12px; }
+.legend { display: inline-flex; align-items: center; gap: 4px; }
+.legend i { width: 16px; height: 10px; display: inline-block; }
+
+.kpis { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin: 14px 0; }
+.kpis div { background: var(--card); border-radius: 6px; padding: 12px 14px; display: grid; box-shadow: var(--shadow-md); }
+.kpis b { font-size: 1.5rem; font-weight: 600; font-variant-numeric: tabular-nums; color: var(--accent-dark); }
+.kpis span { color: var(--ink-2); font-size: .85rem; }
+
+.charts { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
+/* Chart and table cards share one elevation so the page has a single card language:
+   --shadow-md + 6px radius, matching .panel and .hero. They were on --shadow-sm,
+   which made them read as flat panels rather than cards. A 3px accent bar on top ties
+   each card to the hazard theme. */
+.chart-card {
+  background: var(--card); border-radius: 6px; padding: 14px 16px 12px;
+  box-shadow: var(--shadow-md); border-top: 3px solid var(--accent);
+  transition: box-shadow .18s ease, transform .18s ease;
+}
+.chart-card:hover { box-shadow: var(--shadow-lg); transform: translateY(-1px); }
+.chart-card h3 { font-size: 1rem; font-weight: 600; }
+.chart-note { font-size: .8rem; color: var(--ink-2); margin-bottom: 6px; }
+.chart-box { position: relative; height: 250px; }
+
+.section { font-size: 1.05rem; font-weight: 600; margin: 26px 0 10px; }
+.insights { margin: 0; padding: 0; list-style: none; display: grid; gap: 8px; max-width: 80ch; }
+/* Left accent bar is semantic (info / warning / caveat), so it stays; only the
+   outline is replaced by shadow. */
+.insights li { padding: 10px 14px; background: var(--card); border-left: 4px solid var(--cool); border-radius: 4px; box-shadow: var(--shadow-md); }
+.insights .ins-warning { border-left-color: #C98A00; }
+.insights .ins-caveat { border-left-color: var(--ink-2); color: var(--ink-2); font-size: .9rem; }
+/* overflow-x:auto clips the tinted header to the rounded corners; the accent rule under
+   the header separates it from the body rows. */
+.table-scroll {
+  overflow-x: auto; background: var(--card); border-radius: 6px;
+  box-shadow: var(--shadow-md); border-top: 3px solid var(--accent);
+  transition: box-shadow .18s ease, transform .18s ease;
+}
+.table-scroll:hover { box-shadow: var(--shadow-lg); transform: translateY(-1px); }
+table { border-collapse: collapse; width: 100%; font-variant-numeric: tabular-nums; font-size: .9rem; }
+/* Header row carries the hazard tint so the table reads as part of the themed page. */
+th { background: var(--accent-tint); color: var(--accent-dark); font-weight: 600; }
+th, td { padding: 8px 12px; text-align: left; border-bottom: 1px solid var(--rule); white-space: nowrap; }
+thead th { border-bottom: 1px solid var(--accent); }
+th.n, td.n { text-align: right; }
+tbody tr:hover td { background: var(--accent-tint); }
+th, td, .kpis b { transition: color .2s, background-color .2s; }
+.exports { display: flex; flex-wrap: wrap; gap: 10px; margin: 22px 0 10px; }
+.exports a { color: var(--ink); border-radius: 4px; padding: 7px 12px; text-decoration: none; font-size: .9rem; box-shadow: var(--shadow-sm); }
+.exports a:hover { background: var(--ink); color: #fff; box-shadow: var(--shadow-md); }
+.meta { font-size: .8rem; color: var(--ink-2); }
+
+@media (max-width: 980px) {
+  .layout { grid-template-columns: 1fr; }
+  .panel { position: static; }
+  .charts { grid-template-columns: 1fr; }
+  .kpis { grid-template-columns: repeat(2, 1fr); }
+  .hero h2 { font-size: 1.3rem; }
+}
+@media (prefers-reduced-motion: reduce) { * { transition: none !important; animation: none !important; } }
