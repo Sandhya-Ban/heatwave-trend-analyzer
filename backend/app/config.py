@@ -36,7 +36,7 @@ class Settings:
 
     @classmethod
     def from_env(cls) -> "Settings":
-        origins = tuple(o.strip() for o in os.environ.get("CORS_ORIGINS", "").split(",") if o.strip())
+        origins = tuple(o.strip().rstrip("/") for o in os.environ.get("CORS_ORIGINS", "").split(",") if o.strip())
         return cls(
             mongodb_uri=os.environ.get("MONGODB_URI", ""),
             mongodb_db=os.environ.get("MONGODB_DB", "climate_hazards"),

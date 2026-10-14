@@ -152,3 +152,10 @@ def test_security_headers_present():
     c, _ = make()
     h = c.get("/api/health").headers
     assert h["x-content-type-options"] == "nosniff" and "default-src" in h["content-security-policy"]
+
+
+def test_cors_origin_trailing_slash_normalized(monkeypatch):
+    monkeypatch.setenv("CORS_ORIGINS", "https://heatwave-analyzer.netlify.app/")
+    s = Settings.from_env()
+    assert s.cors_origins == ("https://heatwave-analyzer.netlify.app",)
+
